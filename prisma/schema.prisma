@@ -1,0 +1,286 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model sessions {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  jwt     String
+  user_id String @unique(map: "user_id_1")
+}
+
+model FileUpload {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  url String
+}
+
+model Role {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name        String  @unique // ADMIN, USER, STAFF
+  description String?
+
+  // 🔐 Security
+  apiSecret String // ใช้ sign (HMAC)
+  aesKey    String // ใช้ encrypt payload
+  isActive  Boolean @default(true)
+
+  // relation
+  users UserRole[]
+
+  // audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserRole {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  roleId String @db.ObjectId
+
+  user Users @relation(fields: [userId], references: [id])
+  role Role  @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model Users {
+  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  googleId           String?
+  profileImage       String?
+  email              String  @unique
+  name               String
+  password           String?
+  status             String?
+  usersInformationId String? @db.ObjectId
+
+  usersInformation UsersInformation? @relation(fields: [usersInformationId], references: [id])
+  userRoles        UserRole[]
+}
+
+model UsersInformation {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName     String
+  lastName      String
+  citizenId     String   @unique
+  dateOfBirth   DateTime
+  gender        String?
+  nationality   String?
+  maritalStatus String?
+  id_card_image String
+  phone         String   @unique
+
+  email    String?
+  lineId   String?
+  facebook String?
+
+  currentAddress  String?
+  provinceCode    Int?
+  districtCode    Int?
+  subdistrictCode Int?
+  zipcode         String?
+
+  status Status @default(PENDING)
+
+  other_files String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 🔹 back relation
+  users           Users[]
+  JobDetail       JobDetail?
+  bankInformation BankInformation?
+
+  province       Province?       @relation(fields: [provinceCode], references: [code])
+  district       District?       @relation(fields: [districtCode], references: [code])
+  subdistrict    Subdistrict?    @relation(fields: [subdistrictCode], references: [code])
+  loanContracts  LoanContract[]
+  mainStatus     MainStatus?
+  userChartStats UserChartStat[]
+}
+
+model JobDetail {
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  occupation         String
+  companyName        String?
+  companyAddress     String?
+  position           String?
+  salaryPerMonth     Float
+  otherIncome        Float?    @default(0)
+  workYears          Int
+  employmentType     String // fulltime freelance business
+  salarySlip         String[]
+  startDate          DateTime?
+  usersInformationId String    @unique @db.ObjectId
+
+  usersInformation UsersInformation @relation(fields: [usersInformationId], references: [id])
+}
+
+model BankInformation {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  bankName          String
+  bankAccountName   String
+  bankAccountNumber String
+  bankBranch        String?
+  accountType       String?
+
+  monthlyIncome   Float
+  monthlyExpense  Float
+  balanceEstimate Float?
+
+  existingDebt            Boolean @default(false)
+  debtInstallmentPerMonth Float?
+
+  riskLevel String?
+  kycStatus String  @default("pending")
+
+  bankStatementFiles String[]
+  passbookImage      String?
+  usersInformationId String   @unique @db.ObjectId
+
+  usersInformation UsersInformation @relation(fields: [usersInformationId], references: [id])
+}
+
+model LoanContract {
+  id                  String @id @default(auto()) @map("_id") @db.ObjectId
+  loanNo              String @unique
+  loanAmount          Float
+  interestRate        Float
+  termMonths          Int
+  installmentPerMonth Float
+
+  loanType String @default("effective") // flat | effective
+
+  status LoanStatus @default(PENDING)
+  // pending, approve, reject
+
+  startDate DateTime
+
+  usersInformationId String           @db.ObjectId
+  usersInformation   UsersInformation @relation(fields: [usersInformationId], references: [id])
+
+  repayments LoanRepayment[]
+
+  createdAt DateTime @default(now())
+}
+
+enum LoanStatus {
+  PENDING // รอดำเนินการ
+  APPROVED // อนุมัติ
+  ACTIVE // กำลังผ่อน
+  COMPLETED // ปิดสัญญา
+  REJECTED // ปฏิเสธ
+}
+
+enum Status {
+  PENDING // รอดำเนินการ
+  APPROVED // อนุมัติ
+  // ACTIVE // กำลังผ่อน
+  REJECTED
+}
+
+model LoanRepayment {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  installmentNo Int
+
+  dueDate  DateTime
+  dueMonth String // "2026-02"
+
+  principal Float
+  interest  Float
+  total     Float
+  balance   Float
+
+  status String @default("unpaid")
+  // unpaid, paid, late
+
+  paidAmount Float?
+  paidAt     DateTime?
+
+  loanContractId String       @db.ObjectId
+  loanContract   LoanContract @relation(fields: [loanContractId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model MainStatus {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  usersInformationId String @unique @db.ObjectId
+
+  totalContracts    Int   @default(0) // จำนวนสัญญา
+  pendingAmount     Float @default(0) // เงินที่รออนุมัติ
+  approvedContracts Int   @default(0) // สัญญาที่อนุมัติ
+  approvedAmount    Float @default(0) // วงเงินที่อนุมัติแล้ว
+  usedAmount        Float @default(0) // เงินที่ใช้ไปแล้ว
+
+  approvalRate  Float? // %
+  lastUpdatedAt DateTime @updatedAt
+
+  usersInformation UsersInformation @relation(fields: [usersInformationId], references: [id])
+}
+
+model UserChartStat {
+  id                 String @id @default(auto()) @map("_id") @db.ObjectId
+  usersInformationId String @db.ObjectId
+
+  date     DateTime
+  dayLabel String // Mon, Tue
+  value    Float
+
+  type String // loan, payment, approve
+
+  usersInformation UsersInformation @relation(fields: [usersInformationId], references: [id])
+}
+
+// Aaddess
+model Province {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  code   Int     @unique
+  nameTh String
+  nameEn String?
+
+  districts         District[]
+  subdistricts      Subdistrict[]      @relation("ProvinceSubdistrict")
+  usersInformations UsersInformation[]
+}
+
+model District {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  code   Int     @unique
+  nameTh String
+  nameEn String?
+
+  provinceCode Int
+  province     Province @relation(fields: [provinceCode], references: [code])
+
+  subdistricts      Subdistrict[]
+  usersInformations UsersInformation[]
+}
+
+model Subdistrict {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  code       Int     @unique
+  nameTh     String
+  nameEn     String?
+  postalCode String
+
+  districtCode Int
+  district     District @relation(fields: [districtCode], references: [code])
+
+  provinceCode      Int
+  province          Province           @relation("ProvinceSubdistrict", fields: [provinceCode], references: [code])
+  usersInformations UsersInformation[]
+}

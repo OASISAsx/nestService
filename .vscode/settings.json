@@ -1,0 +1,4 @@
+{
+  "prisma.pinToPrisma6": false,
+  "vsicons.presets.nestjs": true
+}
