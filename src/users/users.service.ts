@@ -1,29 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { paginationSchema } from 'src/schemas/pagination.schema';
+import { getPagination } from 'src/helpers/paginationZod.helper';
+import { ALL_USER_STATUS } from 'src/constants/statusDefault';
+import { buildPaginationMeta } from 'src/helpers/pagination.helper';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+  async getUsers(input: unknown) {
+    const parsed = paginationSchema.parse(input);
 
-  async create(dto: CreateUserDto) {
-    const user = await this.prisma.users.create({
-      data: dto,
+    const { page, limit, take, skip } = getPagination(parsed);
+
+    const [data, total] = await Promise.all([
+      this.prisma.users.findMany({
+        where: {
+          usersInformation: {
+            isNot: null,
+          },
+        },
+        include: {
+          usersInformation: {
+            include: {
+              JobDetail: true,
+            },
+          },
+        },
+        take,
+        skip,
+      }),
+
+      this.prisma.users.count({
+        // where: {
+        //   usersInformation: {
+        //     isNot: null,
+        //   },
+      }),
+    ]);
+
+    const statusGroup = await this.prisma.usersInformation.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    });
+
+    const statusSummary = ALL_USER_STATUS.reduce(
+      (acc, status) => {
+        acc[status] = 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    statusGroup.forEach((item) => {
+      statusSummary[item.status] = item._count.status;
     });
 
     return {
-      success: true,
-      message: 'สร้างผู้ใช้สำเร็จ',
-      data: user,
-    };
-  }
-
-  async findAll() {
-    const users = await this.prisma.users.findMany({});
-    return {
-      success: true,
-      data: users,
+      data,
+      meta: buildPaginationMeta(total, page, limit),
+      // status: statusSummary,
     };
   }
 

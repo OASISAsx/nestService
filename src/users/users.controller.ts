@@ -1,28 +1,50 @@
 import {
   Controller,
   Get,
-  Post,
+  // Post,
   Body,
   Patch,
   Param,
   Delete,
+  // Post,
+  BadRequestException,
+  Req,
+  Query,
+  UseGuards,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import { DecryptGuard } from 'src/common/guards/decrypt.guard';
+import { ZodError } from 'zod';
+import * as customRequestInterface from 'src/common/types/custom-request.interface';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @UseGuards(DecryptGuard) // ✅ ใช้ guard
+  async getUsers(
+    @Req() req: customRequestInterface.CustomRequest,
+    @Query() query: Record<string, unknown>,
+  ) {
+    try {
+      const payload = req.decryptedBody ?? query;
+
+      const result = await this.usersService.getUsers(payload);
+
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid pagination parameters');
+      }
+
+      console.error('getUsers error:', error);
+      throw new InternalServerErrorException('Failed to fetch users');
+    }
   }
 
   @Get(':id')
