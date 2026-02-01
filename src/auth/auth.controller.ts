@@ -10,12 +10,7 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
-    const user = await this.authService.register(dto);
-
-    return {
-      success: true,
-      data: user,
-    };
+    await this.authService.register(dto);
   }
 
   @Post('login')
@@ -31,12 +26,6 @@ export class AuthController {
 
   @Post('loginGoogle')
   async loginGoogle(@Body() dto: LoginGoogleDto) {
-    const result = await this.authService.loginGoogle(dto);
-
-    return {
-      success: true,
-      token: result.token,
-      data: result.user,
-    };
+    await this.authService.loginGoogle(dto);
   }
 }

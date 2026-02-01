@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { hashPassword } from 'src/utils/password.util';
 import { LoginGoogleDto } from './dto/loginGoogle.dto';
+import { success, ZodError } from 'zod';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +24,6 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const { name, email, password } = dto;
 
-    // check email exists
     const existingUser = await this.prisma.users.findFirst({
       where: { email },
     });
@@ -30,6 +31,7 @@ export class AuthService {
     if (existingUser) {
       throw new ConflictException('Email already registered');
     }
+
     const hashedPassword = await hashPassword(password, 10);
 
     const newUser = await this.prisma.users.create({
@@ -41,14 +43,12 @@ export class AuthService {
       },
     });
 
-    // equivalent createUserLogin(newUser.id)
-    // await this.prisma.userLogin.create({
-    //   data: {
-    //     user_id: newUser.id,
-    //   },
-    // });
+    await this.createUserRole(newUser.id);
 
-    return newUser;
+    return {
+      success: true,
+      data: newUser,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -98,80 +98,100 @@ export class AuthService {
   }
   async loginGoogle(dto: LoginGoogleDto) {
     const { googleId, email, name, image } = dto;
+    try {
+      let user = await this.prisma.users.findFirst({
+        where: {
+          OR: [{ googleId }, { email }],
+        },
+        include: {
+          userRoles: {
+            include: {
+              role: true,
+            },
+          },
+          usersInformation: {
+            include: {
+              JobDetail: true,
+              province: true,
+              district: true,
+              subdistrict: true,
+            },
+          },
+        },
+      });
 
-    let user = await this.prisma.users.findFirst({
-      where: {
-        OR: [{ googleId }, { email }],
-      },
-      include: {
-        userRoles: {
-          include: {
-            role: true,
+      // 👉 ถ้าไม่เจอ user เลย → create ใหม่
+      if (!user) {
+        user = await this.prisma.users.create({
+          data: {
+            googleId,
+            email,
+            name,
+            profileImage: image,
+            status: 'active',
           },
-        },
-        usersInformation: {
           include: {
-            JobDetail: true,
-            province: true,
-            district: true,
-            subdistrict: true,
+            userRoles: {
+              include: { role: true },
+            },
+            usersInformation: {
+              include: {
+                JobDetail: true,
+                province: true,
+                district: true,
+                subdistrict: true,
+              },
+            },
           },
-        },
-      },
+        });
+      }
+
+      // 👉 ถ้าเจอ user แต่ยังไม่ผูก googleId → update
+      else if (!user.googleId) {
+        user = await this.prisma.users.update({
+          where: { id: user.id },
+          data: { googleId },
+          include: {
+            userRoles: {
+              include: { role: true },
+            },
+            usersInformation: {
+              include: {
+                JobDetail: true,
+                province: true,
+                district: true,
+                subdistrict: true,
+              },
+            },
+          },
+        });
+      }
+
+      const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
+
+      return {
+        success,
+        token,
+        user,
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException(`can't not Login`);
+      }
+    }
+  }
+
+  async createUserRole(userId: string) {
+    const findRole = await this.prisma.role.findFirst({
+      where: { name: 'USER' },
     });
 
-    // 👉 ถ้าไม่เจอ user เลย → create ใหม่
-    if (!user) {
-      user = await this.prisma.users.create({
-        data: {
-          googleId,
-          email,
-          name,
-          profileImage: image,
-          status: 'active',
-        },
-        include: {
-          userRoles: {
-            include: { role: true },
-          },
-          usersInformation: {
-            include: {
-              JobDetail: true,
-              province: true,
-              district: true,
-              subdistrict: true,
-            },
-          },
-        },
-      });
+    if (!findRole) {
+      throw new NotFoundException('USER role not found');
     }
 
-    // 👉 ถ้าเจอ user แต่ยังไม่ผูก googleId → update
-    else if (!user.googleId) {
-      user = await this.prisma.users.update({
-        where: { id: user.id },
-        data: { googleId },
-        include: {
-          userRoles: {
-            include: { role: true },
-          },
-          usersInformation: {
-            include: {
-              JobDetail: true,
-              province: true,
-              district: true,
-              subdistrict: true,
-            },
-          },
-        },
-      });
-    }
-
-    const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
-
-    return {
-      token,
-      user,
-    };
+    return this.prisma.userRole.create({
+      data: { userId, roleId: findRole.id },
+    });
   }
 }
