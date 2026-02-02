@@ -3,12 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { paginationSchema } from 'src/schemas/pagination.schema';
-import { getPagination } from 'src/helpers/paginationZod.helper';
-import { ALL_USER_STATUS } from 'src/constants/statusDefault';
-import { buildPaginationMeta } from 'src/helpers/pagination.helper';
+import { paginationSchema } from 'src/common/schemas/pagination.schema';
+import { getPagination } from 'src/common/helpers/pagination.helper';
+import { ALL_USER_STATUS } from 'src/common/constants/statusDefault';
+import { buildPaginationMeta } from 'src/common/helpers/pagination.helper';
 import { ZodError } from 'zod';
 
 @Injectable()
@@ -107,11 +106,11 @@ export class UsersService {
     };
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id}${updateUserDto.name} user`;
-  }
+  // update(id: number, updateUserDto: UpdateUserDto) {
+  //   return `This action updates a #${id}${updateUserDto.name} user`;
+  // }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} user`;
+  // }
 }

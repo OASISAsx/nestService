@@ -14,18 +14,12 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    const result = await this.authService.login(dto);
-
-    return {
-      success: true,
-      token: result.token,
-      data: result.user,
-    };
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @Post('loginGoogle')
-  async loginGoogle(@Body() dto: LoginGoogleDto) {
-    await this.authService.loginGoogle(dto);
+  loginGoogle(@Body() dto: LoginGoogleDto) {
+    return this.authService.loginGoogle(dto);
   }
 }

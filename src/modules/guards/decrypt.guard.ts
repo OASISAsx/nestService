@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import {
   CustomRequest,
   DecryptedPayload,
-} from '../types/custom-request.interface';
+} from '../../common/types/custom-request.interface';
 
 @Injectable()
 export class DecryptGuard implements CanActivate {

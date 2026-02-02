@@ -5,14 +5,14 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { hashPassword } from 'src/utils/password.util';
+import { comparePassword, hashPassword } from 'src/modules/utils/password.util';
 import { LoginGoogleDto } from './dto/loginGoogle.dto';
-import { success, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 @Injectable()
 export class AuthService {
@@ -53,15 +53,11 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const { email, password } = dto;
-
-    const user = await this.prisma.users.findUnique({
+    console.log(email, 'dev1@dev.com');
+    const user = await this.prisma.users.findFirst({
       where: { email },
       include: {
-        userRoles: {
-          include: {
-            role: true,
-          },
-        },
+        userRoles: { include: { role: true } },
         usersInformation: {
           include: {
             JobDetail: true,
@@ -72,19 +68,27 @@ export class AuthService {
         },
       },
     });
-
+    console.log(user, 'user');
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    const hashedPassword = await hashPassword(password, 10);
-
-    if (!hashedPassword) {
+    if (!user.password) {
+      throw new UnauthorizedException('This account uses Google login');
+    }
+    const isValid = await comparePassword(password, user.password);
+    console.log(isValid, 'isValid');
+    if (!isValid) {
       throw new UnauthorizedException('Invalid password');
     }
 
-    const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    const token = this.jwtService.sign(
+      {
+        id: user.id,
+        roles: user.userRoles.map((r) => r.role.name),
+      },
+      { expiresIn: '1h' },
+    );
+
     await this.prisma.sessions.upsert({
       where: { user_id: user.id },
       update: { jwt: token },
@@ -92,35 +96,41 @@ export class AuthService {
     });
 
     return {
+      success: true,
       token,
       user,
     };
   }
+
   async loginGoogle(dto: LoginGoogleDto) {
     const { googleId, email, name, image } = dto;
+
+    const userInclude = {
+      userRoles: { include: { role: true } },
+      usersInformation: {
+        include: {
+          JobDetail: true,
+          province: true,
+          district: true,
+          subdistrict: true,
+        },
+      },
+    };
+
     try {
       let user = await this.prisma.users.findFirst({
-        where: {
-          OR: [{ googleId }, { email }],
-        },
-        include: {
-          userRoles: {
-            include: {
-              role: true,
-            },
-          },
-          usersInformation: {
-            include: {
-              JobDetail: true,
-              province: true,
-              district: true,
-              subdistrict: true,
-            },
-          },
-        },
+        where: { googleId },
+        include: userInclude,
       });
 
-      // 👉 ถ้าไม่เจอ user เลย → create ใหม่
+      if (!user && email) {
+        user = await this.prisma.users.findFirst({
+          where: { email },
+          include: userInclude,
+        });
+      }
+
+      // 3. ถ้าไม่เจอเลย → create
       if (!user) {
         user = await this.prisma.users.create({
           data: {
@@ -130,54 +140,38 @@ export class AuthService {
             profileImage: image,
             status: 'active',
           },
-          include: {
-            userRoles: {
-              include: { role: true },
-            },
-            usersInformation: {
-              include: {
-                JobDetail: true,
-                province: true,
-                district: true,
-                subdistrict: true,
-              },
-            },
-          },
+          include: userInclude,
         });
+        await this.createUserRole(user.id);
       }
-
-      // 👉 ถ้าเจอ user แต่ยังไม่ผูก googleId → update
+      // 4. ถ้าเจอแต่ยังไม่ผูก googleId
       else if (!user.googleId) {
         user = await this.prisma.users.update({
           where: { id: user.id },
           data: { googleId },
-          include: {
-            userRoles: {
-              include: { role: true },
-            },
-            usersInformation: {
-              include: {
-                JobDetail: true,
-                province: true,
-                district: true,
-                subdistrict: true,
-              },
-            },
-          },
+          include: userInclude,
         });
       }
 
-      const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
+      const token = this.jwtService.sign(
+        {
+          id: user.id,
+          roles: user.userRoles.map((r) => r.role.name),
+        },
+        { expiresIn: '1h' },
+      );
 
       return {
-        success,
+        success: true,
         token,
         user,
       };
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new BadRequestException(`can't not Login`);
+        throw new BadRequestException('Cannot login with Google');
       }
+
+      throw error;
     }
   }
 
