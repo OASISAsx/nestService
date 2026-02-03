@@ -1,3 +1,4 @@
+import { ThaiGeoModule } from './thaiGeo/thaigeo.module';
 import { UserInfornationModule } from './userInformation/userinfornation.module';
 import { UserInformationService } from './userInformation/userinformation.service';
 import { Module } from '@nestjs/common';
@@ -9,7 +10,14 @@ import { AuthModule } from './modules/auth/auth.module';
 // import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [UserInfornationModule, PrismaModule, UsersModule, AuthModule],
+  imports: [
+    ThaiGeoModule,
+    UserInfornationModule,
+    PrismaModule,
+    UsersModule,
+    AuthModule,
+    ThaiGeoModule,
+  ],
   controllers: [],
   providers: [UserInformationService],
 })

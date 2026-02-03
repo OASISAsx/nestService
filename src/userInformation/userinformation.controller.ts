@@ -2,10 +2,12 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 // import * as customRequestInterface from 'src/common/types/custom-request.interface';
 import { UserInformationService } from './userinformation.service';
-@Controller('userInformation')
+import { CreateUserInformationDto } from './dto/create.userInformation.dto';
+// import { CreateUserInformationDto } from './dto/create.userInformation.dto';
+@Controller('information')
 export class UserInformationController {
   constructor(
     private readonly UserInformationService: UserInformationService,
@@ -13,5 +15,9 @@ export class UserInformationController {
   @Get()
   async getAll(@Query() query: Record<string, unknown>) {
     return await this.UserInformationService.getAll(query);
+  }
+  @Post()
+  async create(@Body() data: CreateUserInformationDto) {
+    return await this.UserInformationService.create(data);
   }
 }
