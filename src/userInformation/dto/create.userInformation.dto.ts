@@ -1,44 +1,100 @@
+// create-user-information.dto.ts
 import {
   IsString,
-  IsNumber,
-  IsPhoneNumber,
-  IsEmail,
   IsOptional,
+  IsEmail,
+  IsArray,
   IsEnum,
+  IsDate,
+  IsNumber,
 } from 'class-validator';
+import { Prisma } from '@prisma/client';
+import { Type } from 'class-transformer';
 
-// นำเข้า Status enum จาก Prisma
-import { Status } from '@prisma/client';
+export enum Status {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
 
-export class CreateUserInformationDto {
-  @IsString() firstName!: string;
-  @IsString() lastName!: string;
-  @IsString() citizenId!: string;
+export class CreateUserInformationDto
+  implements Prisma.UsersInformationCreateInput
+{
+  @IsString()
+  firstName: string;
 
-  // dateOfBirth ควรเป็น string ที่แปลงเป็น Date ภายหลัง
-  @IsString() dateOfBirth!: string;
+  @IsString()
+  lastName: string;
 
-  @IsOptional() @IsString() gender?: string | null;
-  @IsOptional() @IsString() nationality?: string | null;
-  @IsOptional() @IsString() maritalStatus?: string | null;
+  @IsString()
+  citizenId: string;
 
-  @IsString() id_card_image!: string;
-  @IsPhoneNumber('TH') phone!: string;
+  @IsString()
+  @IsOptional()
+  gender?: string | null;
 
-  @IsOptional() @IsEmail() email?: string | null;
-  @IsOptional() @IsString() lineId?: string | null;
-  @IsOptional() @IsString() facebook?: string | null;
-  @IsOptional() @IsString() currentAddress?: string | null;
+  @IsString()
+  @IsOptional()
+  nationality?: string | null;
 
-  @IsOptional() @IsNumber() provinceCode?: number | null;
-  @IsOptional() @IsNumber() districtCode?: number | null;
-  @IsOptional() @IsNumber() subdistrictCode?: number | null;
-  @IsOptional() @IsString() zipcode?: string | null;
+  @IsString()
+  @IsOptional()
+  maritalStatus?: string | null;
 
-  // 🔥 แก้ไขตรงนี้ - ใช้ IsEnum และรับค่าเป็น Status
-  @IsEnum(Status) status!: Status;
+  @IsString()
+  id_card_image: string;
 
-  @IsString({ each: true }) other_files!: string[];
+  @IsString()
+  phone: string;
 
-  @IsOptional() @IsString() userId?: string;
+  @IsEmail()
+  @IsOptional()
+  email?: string | null;
+
+  @IsString()
+  @IsOptional()
+  lineId?: string | null;
+
+  @IsString()
+  @IsOptional()
+  facebook?: string | null;
+
+  @IsString()
+  @IsOptional()
+  currentAddress?: string | null;
+
+  @IsNumber()
+  provinceCode?: number;
+
+  @IsNumber()
+  districtCode?: number | null;
+
+  @IsNumber()
+  subdistrictCode?: number | null;
+
+  @IsString()
+  @IsOptional()
+  zipcode?: string | null;
+
+  @IsDate()
+  @Type(() => Date)
+  dateOfBirth: Date;
+
+  @IsArray()
+  @IsOptional()
+  other_files?: string[];
+  @IsString()
+  userId: string;
+  @IsEnum(Status)
+  @IsOptional()
+  status?: Status;
+}
+
+// update-user-information-id.dto.ts
+export class UpdateUserInformationIdDto {
+  @IsString()
+  userId: string;
+
+  @IsString()
+  usersInformationId: string;
 }

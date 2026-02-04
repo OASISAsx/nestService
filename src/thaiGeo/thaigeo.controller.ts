@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ThaiGeoService } from './thaigeo.service';
 
 @Controller('thaiGeo')
@@ -11,11 +11,11 @@ export class ThaiGeoController {
   }
 
   @Get('districts')
-  async getDistricts(@Param('provinceCode') provinceCode: number) {
+  async getDistricts(@Query('provinceCode') provinceCode: number) {
     return await this.ThaiGeoService.districts(provinceCode);
   }
   @Get('subdistricts')
-  async subdistrict(@Param('districtCode') districtCode: number) {
+  async subdistrict(@Query('districtCode') districtCode: number) {
     return await this.ThaiGeoService.subdistrict(districtCode);
   }
 }
