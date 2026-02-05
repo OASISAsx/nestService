@@ -7,18 +7,27 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
-// import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
 
+// import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
-    ThaiGeoModule,
-    UserInfornationModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath:
+        process.env.NODE_ENV === 'production'
+          ? '.env.production'
+          : '.env.development',
+    }),
+
     PrismaModule,
     UsersModule,
     AuthModule,
     ThaiGeoModule,
+    UserInfornationModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [UserInformationService],
 })
 export class AppModule {}
