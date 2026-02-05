@@ -6,7 +6,7 @@ export class AppController {
   home() {
     return {
       status: 'ok',
-      message: 'EliteFund API is running 🚀',
+      message: 'EliteFund API is running PipeLine 🚀',
     };
   }
 }
