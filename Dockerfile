@@ -8,8 +8,11 @@ RUN npm install
 
 COPY . .
 
+# 🔥 สำคัญมากสำหรับ Prisma
+RUN npx prisma generate
+
 RUN npm run build
 
-CMD ["npm", "run", "start:prod"]
-
 EXPOSE 3001
+
+CMD ["npm", "run", "start:prod"]
