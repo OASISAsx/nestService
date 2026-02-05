@@ -52,17 +52,12 @@ jobs:
           port: 22
           script: |
             set -e
-
             cd /root/nestService
 
-            echo "📥 Sync build branch..."
             git fetch origin
             git reset --hard origin/build
 
-            echo "🐳 Build & restart containers..."
+            docker compose down --remove-orphans
             docker compose up -d --build
 
-            echo "🧹 Cleanup old images..."
             docker image prune -f
-
-            echo "✅ Production deployed!"
