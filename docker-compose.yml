@@ -1,8 +1,10 @@
+version: '3.8'
+
 services:
-  web:
-    build:
-      context: .
+  backend:
+    build: .
     ports:
-      - '8081:8080'
+      - '3001:3001'
     env_file:
       - .env
+    restart: always
