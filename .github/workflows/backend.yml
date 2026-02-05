@@ -3,7 +3,7 @@ name: Deploy Backend
 on:
   push:
     branches:
-      - dev
+      - build # ✅ deploy เมื่อ push ที่ build เท่านั้น
 
 jobs:
   deploy:
@@ -19,8 +19,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /root/REPO_NAME/nestService
-
+            cd /root/nestService
             git fetch
             git checkout build
             git pull origin build
