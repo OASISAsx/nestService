@@ -3,7 +3,7 @@ name: Deploy Backend
 on:
   push:
     branches:
-      - build # ✅ deploy เมื่อ push ที่ build เท่านั้น
+      - build
 
 jobs:
   deploy:
@@ -20,11 +20,16 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /root/nestService
+
             git fetch
             git checkout build
             git pull origin build
 
-            docker build -t nest-backend .
-            docker stop backend || true
-            docker rm backend || true
-            docker run -d -p 3001:3001 --name backend nest-backend
+            # 🧹 stop containers
+            docker compose down
+
+            # 🔨 rebuild + run
+            docker compose up -d --build
+
+            # 🧽 clean unused images (optional แต่แนะนำ)
+            docker image prune -f
