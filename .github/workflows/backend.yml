@@ -1,35 +1,60 @@
-name: Deploy Backend
+name: CI/CD Backend Production
 
 on:
   push:
     branches:
-      - dev
+      - dev # 🔥 trigger เมื่อ push dev
 
 jobs:
-  deploy:
+  merge-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # สำคัญมาก (ต้องเห็นทุก branch)
 
+      # ✅ Merge dev -> build
+      - name: Merge dev into build
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # checkout build (ถ้าไม่มีให้สร้าง)
+          git checkout build || git checkout -b build
+
+          # update build
+          git pull origin build || true
+
+          # merge dev
+          git merge origin/dev --no-edit
+
+          # push กลับไป build
+          git push origin build
+
+      # 🚀 Deploy using build branch
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
+            set -e
+
             cd /root/nestService
 
+            echo "📥 Checkout production branch..."
             git fetch
             git checkout build
             git pull origin build
 
-            # 🧹 stop containers
-            docker compose down
-
-            # 🔨 rebuild + run
+            echo "🐳 Build & run containers..."
             docker compose up -d --build
 
-            # 🧽 clean unused images (optional แต่แนะนำ)
+            echo "🧹 Cleanup old images..."
             docker image prune -f
+
+            echo "✅ Production deployed!"
