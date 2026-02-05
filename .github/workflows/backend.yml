@@ -1,40 +1,48 @@
 name: CI/CD Backend Production
+
 permissions:
-  contents: write # ⭐ ให้สิทธิ์ push branch ได้
+  contents: write # ให้ GitHub bot push branch build ได้
+
 on:
   push:
     branches:
-      - dev # 🔥 trigger เมื่อ push dev
+      - dev # 🔥 push dev = เริ่ม pipeline
 
 jobs:
   merge-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # สำคัญมาก (ต้องเห็นทุก branch)
+          fetch-depth: 0 # ต้องเห็นทุก branch
 
-      # ✅ Merge dev -> build
+      # =====================
+      # ✅ Auto merge dev -> build
+      # =====================
       - name: Merge dev into build
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # checkout build (ถ้าไม่มีให้สร้าง)
+          git fetch origin
+
+          # checkout build (create if not exist)
           git checkout build || git checkout -b build
 
-          # update build
-          git pull origin build || true
+          # reset build ให้ตรง remote (กัน conflict)
+          git reset --hard origin/build || true
 
           # merge dev
           git merge origin/dev --no-edit
 
-          # push กลับไป build
+          # push to build
           git push origin build
 
-      # 🚀 Deploy using build branch
+      # =====================
+      # 🚀 Deploy production
+      # =====================
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -47,12 +55,11 @@ jobs:
 
             cd /root/nestService
 
-            echo "📥 Checkout production branch..."
-            git fetch
-            git checkout build
-            git pull origin build
+            echo "📥 Sync build branch..."
+            git fetch origin
+            git reset --hard origin/build
 
-            echo "🐳 Build & run containers..."
+            echo "🐳 Build & restart containers..."
             docker compose up -d --build
 
             echo "🧹 Cleanup old images..."
