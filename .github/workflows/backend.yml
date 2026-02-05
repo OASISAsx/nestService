@@ -1,5 +1,6 @@
 name: CI/CD Backend Production
-
+permissions:
+  contents: write # ⭐ ให้สิทธิ์ push branch ได้
 on:
   push:
     branches:
