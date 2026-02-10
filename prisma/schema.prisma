@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,11 +23,9 @@ model Role {
 
   name        String  @unique // ADMIN, USER, STAFF
   description String?
-
-  // 🔐 Security
-  apiSecret String // ใช้ sign (HMAC)
-  aesKey    String // ใช้ encrypt payload
-  isActive  Boolean @default(true)
+  apiSecret   String // ใช้ sign (HMAC)
+  aesKey      String // ใช้ encrypt payload
+  isActive    Boolean @default(true)
 
   // relation
   users UserRole[]
