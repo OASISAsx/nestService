@@ -13,13 +13,14 @@ import { ZodError } from 'zod';
 import { CreateUserInformationDto } from './dto/create.userInformation.dto';
 import { UpdateUserInformationDto } from './dto/update.userInformation.dto';
 import { Prisma } from '@prisma/client';
+import { PaginationDto } from 'src/common/helpers/PaginationDto';
 // import { PrismaClientKnownRequestError } from 'generated/prisma/runtime/client';
 
 @Injectable()
 export class UserInformationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAll(input: { page?: number; limit?: number }) {
+  async getAll(input: PaginationDto) {
     const { page, limit, take, skip } = getPagination(input);
     try {
       const [data, total] = await Promise.all([

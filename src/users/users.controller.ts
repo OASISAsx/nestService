@@ -5,25 +5,27 @@ import {
   Body,
   Param,
   // Post,
-  Req,
-  Query,
   UseGuards,
+  ValidationPipe,
+  Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { DecryptGuard } from 'src/modules/guards/decrypt.guard';
-import * as customRequestInterface from 'src/common/types/custom-request.interface';
+// import * as customRequestInterface from 'src/common/types/custom-request.interface';
+import { SecureQuery } from 'src/modules/guards/secure-query.decorator';
+import { PaginationDto } from 'src/common/helpers/PaginationDto';
+import { JwtAuthGuard } from 'src/modules/guards/jwt-auth.guard';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  @UseGuards(DecryptGuard) // ✅ guard
+  @Post('usersAll')
+  @UseGuards(JwtAuthGuard, DecryptGuard)
   async getUsers(
-    @Req() req: customRequestInterface.CustomRequest,
-    @Query() query: Record<string, unknown>,
+    @SecureQuery<PaginationDto>(new ValidationPipe({ transform: true }))
+    query: PaginationDto,
   ) {
-    const payload = req.decryptedBody ?? query;
-    await this.usersService.getUsers(payload);
+    return this.usersService.getUsers(query);
   }
 
   @Get(':id')

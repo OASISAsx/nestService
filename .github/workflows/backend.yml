@@ -80,7 +80,12 @@ jobs:
             git fetch origin
             git reset --hard origin/build
 
-            docker compose down --remove-orphans
-            docker compose up -d --build
+            export COMPOSE_PROJECT_NAME=nestservice
+
+            # rebuild เฉพาะ backend
+            docker compose build backend
+
+            # restart backend อย่างเดียว (mongo ไม่โดนแตะ)
+            docker compose up -d --no-deps backend
 
             docker image prune -f

@@ -1,76 +1,48 @@
 import {
-  BadRequestException,
+  // BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { paginationSchema } from 'src/common/schemas/pagination.schema';
-import { getPagination } from 'src/common/helpers/pagination.helper';
-import { ALL_USER_STATUS } from 'src/common/constants/statusDefault';
-import { buildPaginationMeta } from 'src/common/helpers/pagination.helper';
-import { ZodError } from 'zod';
+// import { paginationSchema } from 'src/common/schemas/pagination.schema';
+import { PaginationDto } from 'src/common/helpers/PaginationDto';
+import {
+  buildPaginationMetaDecrypt,
+  getPaginationDecrypt,
+} from 'src/common/helpers/paginationDecrypt.helper';
+// import { ALL_USER_STATUS } from 'src/common/constants/statusDefault';
+// import { ZodError } from 'zod';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-  async getUsers(input: unknown) {
-    const parsed = paginationSchema.parse(input);
+  async getUsers(input: PaginationDto) {
+    const { take, skip, page, limit } = getPaginationDecrypt(input);
 
-    const { page, limit, take, skip } = getPagination(parsed);
-    try {
-      const [data, total] = await Promise.all([
-        this.prisma.users.findMany({
-          where: {
-            usersInformation: {
-              isNot: null,
-            },
-          },
-          include: {
-            usersInformation: {
-              include: {
-                JobDetail: true,
-              },
-            },
-          },
-          take,
-          skip,
-        }),
-
-        this.prisma.users.count({
-          // where: {
-          //   usersInformation: {
-          //     isNot: null,
-          //   },
-        }),
-      ]);
-
-      const statusGroup = await this.prisma.usersInformation.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      });
-
-      const statusSummary = ALL_USER_STATUS.reduce(
-        (acc, status) => {
-          acc[status] = 0;
-          return acc;
+    const [data, total] = await Promise.all([
+      this.prisma.users.findMany({
+        where: {
+          usersInformation: { isNot: null },
         },
-        {} as Record<string, number>,
-      );
+        include: {
+          usersInformation: {
+            include: { JobDetail: true },
+          },
+        },
+        take, // ✅ optional number
+        skip, // ✅ optional number
+      }),
+      this.prisma.users.count({
+        where: {
+          usersInformation: { isNot: null },
+        },
+      }),
+    ]);
 
-      statusGroup.forEach((item) => {
-        statusSummary[item.status] = item._count.status;
-      });
-
-      return {
-        data,
-        meta: buildPaginationMeta(total, page, limit),
-        // status: statusSummary,
-      };
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new BadRequestException('Invalid pagination parameters');
-      }
-    }
+    return {
+      data,
+      meta: buildPaginationMetaDecrypt(total, page, limit),
+    };
   }
 
   async findOne(id: string) {

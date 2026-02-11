@@ -2,11 +2,21 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  ValidationPipe,
+} from '@nestjs/common';
 // import * as customRequestInterface from 'src/common/types/custom-request.interface';
 import { UserInformationService } from './userinformation.service';
 import { CreateUserInformationDto } from './dto/create.userInformation.dto';
 import { UpdateUserInformationDto } from './dto/update.userInformation.dto';
+import { PaginationDto } from 'src/common/helpers/PaginationDto';
+import { SecureQuery } from 'src/modules/guards/secure-query.decorator';
 // import { CreateUserInformationDto } from './dto/create.userInformation.dto';
 @Controller('information')
 export class UserInformationController {
@@ -14,7 +24,10 @@ export class UserInformationController {
     private readonly UserInformationService: UserInformationService,
   ) {}
   @Get()
-  async getAll(@Query() query: Record<string, unknown>) {
+  async getAll(
+    @SecureQuery<PaginationDto>(new ValidationPipe({ transform: true }))
+    query: PaginationDto,
+  ) {
     return await this.UserInformationService.getAll(query);
   }
 

@@ -1,20 +1,24 @@
-type PaginationParams = {
-  page?: number;
-  limit?: number;
-};
+import { PaginationDto } from './PaginationDto';
 
-const getPagination = ({ page = 1, limit = 10 }: PaginationParams) => {
-  const take = Number(limit);
-  const skip = (Number(page) - 1) * take;
-
-  return { take, skip, page: Number(page), limit: take };
-};
-
-const buildPaginationMeta = (total: number, page: number, limit: number) => ({
+export const buildPaginationMeta = (
+  total: number,
+  page: number,
+  limit: number,
+) => ({
   total,
   page,
   limit,
-  totalPages: Math.ceil(total / limit),
+  totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
 });
 
-export { getPagination, buildPaginationMeta };
+export const getPagination = ({ page, limit }: PaginationDto) => {
+  const take = limit;
+  const skip = (page - 1) * take;
+
+  return {
+    take,
+    skip,
+    page,
+    limit,
+  };
+};

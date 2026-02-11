@@ -6,10 +6,12 @@ export const ALL_STATUSS = [
   'REJECTED', // ปฏิเสธ];
 ];
 import { BadRequestException, Injectable } from '@nestjs/common';
+
 import {
   buildPaginationMeta,
   getPagination,
 } from 'src/common/helpers/pagination.helper';
+import { PaginationDto } from 'src/common/helpers/PaginationDto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ZodError } from 'zod';
 
@@ -17,7 +19,7 @@ import { ZodError } from 'zod';
 export class LoanContactService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getLoanContacts(input: { page?: number; limit?: number }) {
+  async getLoanContacts(input: PaginationDto) {
     const { page, limit, take, skip } = getPagination(input);
 
     try {
