@@ -8,8 +8,7 @@ services:
     ports:
       - '27017:27017'
     volumes:
-    mongo_data:
-      name: nestservice_mongo_data
+      - mongo_data:/data/db # 👈 ต้องเป็น array และมี -
 
   backend:
     build: .
@@ -20,5 +19,7 @@ services:
     depends_on:
       - mongo
 
+# 👇 ส่วนนี้คือการ "ประกาศ volume"
 volumes:
   mongo_data:
+    name: nestservice_mongo_data # 👈 ล็อกชื่อจริงตรงนี้
