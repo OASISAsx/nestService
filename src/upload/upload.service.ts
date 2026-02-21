@@ -26,7 +26,6 @@ export class UploadService {
       throw new BadRequestException('Files not provided');
     }
 
-    // upload พร้อมกันทั้งหมด
     const uploadResults = await Promise.all(
       files.map((file) => this.cloudinary.upload(file.buffer)),
     );
