@@ -12,6 +12,8 @@ import { AppController } from './app.controller';
 import { LoanContactModule } from './loanContact/loancontact.module';
 
 // import { AuthModule } from './auth/auth.module';
+import { UploadModule } from './upload/upload.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,6 +30,8 @@ import { LoanContactModule } from './loanContact/loancontact.module';
     ThaiGeoModule,
     UserInfornationModule,
     LoanContactModule,
+    UploadModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [UserInformationService],
