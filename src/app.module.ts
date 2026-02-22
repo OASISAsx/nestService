@@ -14,6 +14,7 @@ import { LoanContactModule } from './loanContact/loancontact.module';
 // import { AuthModule } from './auth/auth.module';
 import { UploadModule } from './upload/upload.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { JobDetailModule } from './job-detail/job-detail.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,6 +33,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     LoanContactModule,
     UploadModule,
     CloudinaryModule,
+    JobDetailModule,
   ],
   controllers: [AppController],
   providers: [UserInformationService],

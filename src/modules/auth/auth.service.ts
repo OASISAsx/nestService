@@ -39,7 +39,7 @@ export class AuthService {
         name,
         email,
         password: hashedPassword,
-        status: 'active',
+        status: 'PENDING',
       },
     });
 
@@ -138,7 +138,7 @@ export class AuthService {
             email,
             name,
             profileImage: image,
-            status: 'active',
+            status: 'PENDING',
           },
           include: userInclude,
         });

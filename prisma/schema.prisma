@@ -47,14 +47,14 @@ model UserRole {
 }
 
 model Users {
-  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
   googleId           String?
   profileImage       String?
-  email              String  @unique
+  email              String     @unique
   name               String
   password           String?
-  status             String?
-  usersInformationId String? @db.ObjectId
+  status             StatusUser @default(PENDING)
+  usersInformationId String?    @db.ObjectId
 
   usersInformation UsersInformation? @relation(fields: [usersInformationId], references: [id])
   userRoles        UserRole[]
@@ -178,7 +178,12 @@ enum LoanStatus {
 enum Status {
   PENDING // รอดำเนินการ
   APPROVED // อนุมัติ
-  // ACTIVE // กำลังผ่อน
+  REJECTED
+}
+
+enum StatusUser {
+  PENDING // รอดำเนินการ
+  ACTIVE // อนุมัติ
   REJECTED
 }
 

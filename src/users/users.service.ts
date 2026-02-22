@@ -10,6 +10,7 @@ import {
   buildPaginationMetaDecrypt,
   getPaginationDecrypt,
 } from 'src/common/helpers/paginationDecrypt.helper';
+import { StatusUser } from '@prisma/client';
 // import { ALL_USER_STATUS } from 'src/common/constants/statusDefault';
 // import { ZodError } from 'zod';
 
@@ -19,29 +20,44 @@ export class UsersService {
   async getUsers(input: PaginationDto) {
     const { take, skip, page, limit } = getPaginationDecrypt(input);
 
-    const [data, total] = await Promise.all([
+    const where = {
+      usersInformation: { isNot: null },
+    };
+
+    const [data, total, statusCounts] = await Promise.all([
       this.prisma.users.findMany({
-        where: {
-          usersInformation: { isNot: null },
-        },
+        where,
         include: {
           usersInformation: {
             include: { JobDetail: true },
           },
         },
-        take, // ✅ optional number
-        skip, // ✅ optional number
+        take,
+        skip,
       }),
-      this.prisma.users.count({
-        where: {
-          usersInformation: { isNot: null },
+
+      this.prisma.users.count({ where }),
+
+      this.prisma.users.groupBy({
+        by: ['status'],
+        where,
+        _count: {
+          status: true,
         },
       }),
     ]);
+    const statusSummary = Object.values(StatusUser).map((status) => {
+      const found = statusCounts.find((s) => s.status === status);
+      return {
+        status,
+        count: found?._count.status ?? 0,
+      };
+    });
 
     return {
       data,
       meta: buildPaginationMetaDecrypt(total, page, limit),
+      status: statusSummary,
     };
   }
 
